@@ -22,6 +22,13 @@ import LocalAuthentication
 
     @objc(isAvailable:)
     func isAvailable(_ command: CDVInvokedUrlCommand){
+        let data  = command.arguments[0] as AnyObject?;
+        var disableBackup = true
+
+        if let paramsDisableBackup = data?["disableBackup"] as! Bool? {
+            disableBackup = paramsDisableBackup
+        }
+
         let authenticationContext = LAContext();
         var biometryType = "finger";
         var errorResponse: [AnyHashable: Any] = [
@@ -29,7 +36,7 @@ import LocalAuthentication
             "message": "Not Available"
         ];
         var error:NSError?;
-        let policy:LAPolicy = .deviceOwnerAuthenticationWithBiometrics;
+        let policy:LAPolicy = disableBackup ? .deviceOwnerAuthenticationWithBiometrics : .deviceOwnerAuthentication;
         var pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Not available");
         let available = authenticationContext.canEvaluatePolicy(policy, error: &error);
 
@@ -45,11 +52,19 @@ import LocalAuthentication
             if #available(iOS 11.0, *) {
                 switch(authenticationContext.biometryType) {
                 case .none:
-                    biometryType = "none";
+                    biometryType = "backup";
                 case .touchID:
                     biometryType = "finger";
                 case .faceID:
                     biometryType = "face"
+                }
+            } else {
+                if (!disableBackup) {
+                    let availableWithoutBackup = authenticationContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error);
+
+                    if (!availableWithoutBackup) {
+                        biometryType = "backup"
+                    }
                 }
             }
 

@@ -1,6 +1,7 @@
 package de.niklasmerz.cordova.biometric;
 
 import android.app.Activity;
+//import android.app.KeyguardManager;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,12 +24,16 @@ public class Fingerprint extends CordovaPlugin {
     private CallbackContext mCallbackContext = null;
 
     private static final int REQUEST_CODE_BIOMETRIC = 1;
+//    private static final int REQUEST_CODE_DEVICE_CREDENTIALS = 2;
+
     private PromptInfo.Builder mPromptInfoBuilder;
+//    private KeyguardManager mKeyguardManager;
 
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
         Log.v(TAG, "Init Fingerprint");
         mPromptInfoBuilder = new PromptInfo.Builder(cordova.getActivity());
+//        mKeyguardManager = cordova.getActivity().getSystemService(KeyguardManager.class);
     }
 
     public boolean execute(final String action, JSONArray args, CallbackContext callbackContext) {
@@ -41,15 +46,17 @@ public class Fingerprint extends CordovaPlugin {
             return true;
 
         } else if (action.equals("isAvailable")){
-            executeIsAvailable();
+            executeIsAvailable(args);
             return true;
         }
 
         return false;
     }
 
-    private void executeIsAvailable() {
-        PluginError error = canAuthenticate();
+    private void executeIsAvailable(JSONArray args) {
+        PromptInfo promptInfo = mPromptInfoBuilder.parseArgs(args).build();
+
+        PluginError error = canAuthenticate(promptInfo.isDeviceCredentialAllowed());
         if (error != null) {
             sendError(error);
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P){
@@ -60,15 +67,16 @@ public class Fingerprint extends CordovaPlugin {
     }
 
     private void executeAuthenticate(JSONArray args) {
-        PluginError error = canAuthenticate();
+        PromptInfo promptInfo = mPromptInfoBuilder.parseArgs(args).build();
+
+        PluginError error = canAuthenticate(promptInfo.isDeviceCredentialAllowed());
         if (error != null) {
             sendError(error);
             return;
         }
         cordova.getActivity().runOnUiThread(() -> {
-            mPromptInfoBuilder.parseArgs(args);
             Intent intent = new Intent(cordova.getActivity().getApplicationContext(), BiometricActivity.class);
-            intent.putExtras(mPromptInfoBuilder.build().getBundle());
+            intent.putExtras(promptInfo.getBundle());
             this.cordova.startActivityForResult(this, intent, REQUEST_CODE_BIOMETRIC);
         });
         PluginResult pluginResult = new PluginResult(PluginResult.Status.NO_RESULT);
@@ -89,8 +97,23 @@ public class Fingerprint extends CordovaPlugin {
         }
     }
 
-    private PluginError canAuthenticate() {
+    // private void showDeviceCredentialsPrompt() {
+    //     Intent intent = mKeyguardManager.createConfirmDeviceCredentialIntent(null, null);
+    //     if (intent != null) {
+    //       cordova.setActivityResultCallback(this);
+    //       cordova.getActivity().startActivityForResult(intent, REQUEST_CODE_DEVICE_CREDENTIALS);
+    //     }
+    // }
+
+    private PluginError canAuthenticate(boolean isDeviceCredentialAllowed) {
         int error = BiometricManager.from(cordova.getContext()).canAuthenticate();
+
+        if (error != BiometricManager.BIOMETRIC_SUCCESS) {
+            if (isDeviceCredentialAllowed && mKeyguardManager.isDeviceSecure()) {
+                return null;
+            }
+        }
+
         switch (error) {
             case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
             case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
