@@ -22,6 +22,7 @@ Fingerprint.prototype.BIOMETRIC_LOCKED_OUT_PERMANENT = -112;
 Fingerprint.prototype.BIOMETRIC_TYPE_FINGERPRINT = "finger";
 Fingerprint.prototype.BIOMETRIC_TYPE_FACE = "face";
 Fingerprint.prototype.BIOMETRIC_TYPE_COMMON = "biometric";
+Fingerprint.prototype.BIOMETRIC_TYPE_BACKUP = "backup";
 
 Fingerprint.prototype.show = function (params, successCallback, errorCallback) {
   cordova.exec(

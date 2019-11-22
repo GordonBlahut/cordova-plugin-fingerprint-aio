@@ -8,3 +8,4 @@ package-lock.json
 /.idea/inspectionProfiles/Project_Default.xml
 /.idea/vcs.xml
 src/android/.project
+.history
