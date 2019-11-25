@@ -49,21 +49,23 @@ import LocalAuthentication
         }
 
         if (available == true) {
-            if #available(iOS 11.0, *) {
-                switch(authenticationContext.biometryType) {
-                case .none:
-                    biometryType = "backup";
-                case .touchID:
-                    biometryType = "finger";
-                case .faceID:
-                    biometryType = "face"
-                }
-            } else {
-                if (!disableBackup) {
-                    let availableWithoutBackup = authenticationContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error);
+            if (!disableBackup) {
+                let availableWithoutBackup = authenticationContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error);
 
-                    if (!availableWithoutBackup) {
-                        biometryType = "backup"
+                if (!availableWithoutBackup) {
+                    biometryType = "backup"
+                }
+            }
+
+            if (biometryType != "backup") {
+                if #available(iOS 11.0, *) {
+                    switch(authenticationContext.biometryType) {
+                    case .none:
+                        biometryType = "none";
+                    case .touchID:
+                        biometryType = "finger";
+                    case .faceID:
+                        biometryType = "face"
                     }
                 }
             }
