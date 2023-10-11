@@ -65,7 +65,9 @@ import LocalAuthentication
                     case .touchID:
                         biometryType = "finger";
                     case .faceID:
-                        biometryType = "face"
+                        biometryType = "face";
+                    @unknown default:
+                        errorResponse["message"] = "Unkown biometry type";
                     }
                 }
             }
